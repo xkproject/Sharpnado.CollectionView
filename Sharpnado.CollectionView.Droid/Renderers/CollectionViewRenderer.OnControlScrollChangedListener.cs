@@ -54,6 +54,13 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                     _element.ScrollingUpCommand?.Execute(null);
                 }
 
+                if (_element.ForceUpdateCurrentIndexDuringScroll && _weakNativeView.TryGetTarget(out CollectionViewRenderer nativeView))
+                {
+                    _cts?.Cancel();
+                    _cts = new CancellationTokenSource();
+                    UpdateCurrentIndex(nativeView, _cts.Token);
+                }
+
                 var infiniteListLoader = _element?.InfiniteListLoader;
                 if (infiniteListLoader == null)
                 {
