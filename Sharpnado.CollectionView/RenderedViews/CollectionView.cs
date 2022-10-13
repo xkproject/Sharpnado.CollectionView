@@ -243,6 +243,12 @@ namespace Sharpnado.CollectionView.RenderedViews
             typeof(CollectionView),
             false);
 
+        public static readonly BindableProperty HaveToDisallowInterceptTouchEventProperty = BindableProperty.Create(
+            nameof(HaveToDisallowInterceptTouchEvent),
+            typeof(bool),
+            typeof(CollectionView),
+            false);
+
         public CollectionView()
         {
             // default layout is VerticalList
@@ -419,6 +425,12 @@ namespace Sharpnado.CollectionView.RenderedViews
         {
             get => (bool)GetValue(ForceUpdateCurrentIndexDuringScrollProperty);
             set => SetValue(ForceUpdateCurrentIndexDuringScrollProperty, value);
+        }
+
+        public bool HaveToDisallowInterceptTouchEvent
+        {
+            get => (bool)GetValue(HaveToDisallowInterceptTouchEventProperty);
+            set => SetValue(HaveToDisallowInterceptTouchEventProperty, value);
         }
 
         public Func<ViewCell, Task> PreRevealAnimationAsync { get; set; }
