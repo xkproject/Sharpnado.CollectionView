@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 
 using Sharpnado.CollectionView.Services;
 using Sharpnado.Tasks;
-using Xamarin.Forms;
 
 namespace Sharpnado.CollectionView.Paging
 {
@@ -24,7 +23,7 @@ namespace Sharpnado.CollectionView.Paging
 
         private readonly object _syncRoot = new object();
         private readonly int _maxItemCount;
-        private readonly Func<int, int, bool, Guid, Task<PageResult<TResult>>> _pageSourceLoader;
+        private readonly Func<int, int, bool, Task<PageResult<TResult>>> _pageSourceLoader;
         private readonly Action<ITaskMonitor> _onTaskCompleted;
         private readonly float _loadingThreshold;
 
@@ -58,7 +57,7 @@ namespace Sharpnado.CollectionView.Paging
         /// Default is 0.25. Requires loadingThreshold in [0,1].
         /// </param>
         public Paginator(
-            Func<int, int, bool, Guid, Task<PageResult<TResult>>> pageSourceLoader,
+            Func<int, int, bool, Task<PageResult<TResult>>> pageSourceLoader,
             Action<ITaskMonitor> onTaskCompleted = null,
             int pageSize = PageSizeDefault,
             int maxItemCount = MaxItemCountDefault,
@@ -144,28 +143,22 @@ namespace Sharpnado.CollectionView.Paging
         /// </summary>
         public void OnScroll(int lastVisibleIndex)
         {
-            var guid = Guid.NewGuid();
-            System.Diagnostics.Debug.WriteLine($"{guid} - OnScroll Start: lastVisibleIndex={lastVisibleIndex}.");
-
             TaskMonitor<bool>.Create(
                 async () =>
                 {
                     await _loadPageSemaphore.WaitAsync();
-                    return await ShouldLoadNextPage(lastVisibleIndex, guid);
+                    return await ShouldLoadNextPage(lastVisibleIndex);
                 },
                 whenSuccessfullyCompleted: (task, shouldLoad) =>
                 {
-                    System.Diagnostics.Debug.WriteLine($"{guid} - OnScroll whenSuccessfullyCompleted: lastVisibleIndex={lastVisibleIndex}.");
                     if (shouldLoad)
                     {
-                        InternalLogger.Info($"{guid} - Scrolled: loading more (max index of visible item {lastVisibleIndex})");
                         int pageToLoad = lastVisibleIndex / PageSize + 2;
-                        LoadPage(pageToLoad, calledFromScroll: true, guid);
+                        LoadPage(pageToLoad, calledFromScroll: true);
                     }
 
                     _loadPageSemaphore.Release();
                 });
-            System.Diagnostics.Debug.WriteLine($"{guid} - OnScroll Finishes: lastVisibleIndex={lastVisibleIndex}.");
         }
 
         /// <summary>
@@ -175,9 +168,8 @@ namespace Sharpnado.CollectionView.Paging
         /// </summary>
         /// <param name="pageNumber">The page number to load (pageNumber = 1 for the first page).</param>
         /// <param name="calledFromScroll">True if LoadPage has been called from OnScroll method of the IInfiniteListLoader.</param>
-        public Task<PageResult<TResult>> LoadPage(int pageNumber, bool calledFromScroll, Guid guid)
+        public Task<PageResult<TResult>> LoadPage(int pageNumber, bool calledFromScroll)
         {
-            System.Diagnostics.Debug.WriteLine($"{guid} - LoadPage: pageNumber={pageNumber}, calledFromScroll={calledFromScroll}.");
             Contract.Requires(() => pageNumber > 0);
             Contract.Requires(
                 () => calledFromScroll || (pageNumber == 1 || pageNumber == (PageLoadedCount + 1)),
@@ -217,65 +209,16 @@ namespace Sharpnado.CollectionView.Paging
                     LoadingTask.CancelCallbacks();
                 }
 
-                System.Diagnostics.Debug.WriteLine($"{guid} - LoadPage Before LoadingTask: pageNumber={pageNumber}, calledFromScroll={calledFromScroll}.");
                 LoadingTask = new TaskMonitor<PageResult<TResult>>.Builder(
-                    () => _pageSourceLoader(pageNumber, PageSize, _refreshRequested, guid))
-                        .WithWhenSuccessfullyCompleted((a, b) => OnPageRetrieved2(a, b, pageNumber, PageSize, _refreshRequested, guid))
-                        .WithWhenCompleted((a) => OnTaskCompleted2(a, pageNumber, PageSize, _refreshRequested, guid))
+                    () => _pageSourceLoader(pageNumber, PageSize, _refreshRequested))
+                        .WithWhenSuccessfullyCompleted(OnPageRetrieved)
+                        .WithWhenCompleted(OnTaskCompleted)
                         .Build();
 
                 InternalLogger.Info($"Page n°{pageNumber} loading started");
-                System.Diagnostics.Debug.WriteLine($"{guid} - LoadPage Before LoadingTask.Start: pageNumber={pageNumber}, calledFromScroll={calledFromScroll}.");
                 LoadingTask.Start();
-                System.Diagnostics.Debug.WriteLine($"{guid} - LoadPage After LoadingTask.Start: pageNumber={pageNumber}, calledFromScroll={calledFromScroll}.");
                 return (Task<PageResult<TResult>>)LoadingTask.Task;
             }
-        }
-
-        private void OnPageRetrieved2(ITaskMonitor task, PageResult<TResult> result, int pageNumber, int pageSize, bool isRefreshing, Guid guid)
-        {
-            System.Diagnostics.Debug.WriteLine($"{guid} - OnPageRetrieved2: pageNumber={pageNumber}, pageSize={pageSize}, isRefreshing={isRefreshing}.");
-            Contract.Requires(() => task != null);
-
-            InternalLogger.Info("On page retrieved callback");
-
-            if (_isDisposed)
-            {
-                return;
-            }
-
-            lock (_syncRoot)
-            {
-                LastResult = result;
-
-                InternalLogger.Info($"{result.Items.Count} items retrieved, total remote items is {result.TotalCount}");
-                if (_refreshRequested)
-                {
-                    Reset();
-                }
-
-                TotalRemoteCount = result.TotalCount;
-                TotalCount = Math.Min(result.TotalCount, _maxItemCount);
-                PageLoadedCount++;
-            }
-
-            _items.AddRange(result.Items);
-            InternalLogger.Info($"{Items.Count} items in paginator collection, {PageLoadedCount} pages loaded");
-
-            Contract.Ensures(() => PageLoadedCount > 0);
-            Contract.Ensures(() => result.Items != null && _maxItemCount >= 0);
-        }
-
-        private void OnTaskCompleted2(ITaskMonitor task, int pageNumber, int pageSize, bool isRefreshing, Guid guid)
-        {
-            System.Diagnostics.Debug.WriteLine($"{guid} - OnTaskCompleted2: pageNumber={pageNumber}, pageSize={pageSize}, isRefreshing={isRefreshing}.");
-            InternalLogger.Info($"OnTaskCompleted( taskStatus: {task.Status} )");
-            if (_isDisposed)
-            {
-                return;
-            }
-
-            _onTaskCompleted?.Invoke(task);
         }
 
         private void OnPageRetrieved(ITaskMonitor task, PageResult<TResult> result)
@@ -329,41 +272,34 @@ namespace Sharpnado.CollectionView.Paging
             _items = new List<TResult>();
         }
 
-        private Task<bool> ShouldLoadNextPage(int lastVisibleIndex, Guid guid)
+        private Task<bool> ShouldLoadNextPage(int lastVisibleIndex)
         {
-            System.Diagnostics.Debug.WriteLine($"{guid} - ShouldLoadNextPage: lastVisibleIndex={lastVisibleIndex}.");
             return Task.Run(() =>
             {
-                System.Diagnostics.Debug.WriteLine($"{guid} - ShouldLoadNextPage Run Start: lastVisibleIndex={lastVisibleIndex}.");
                 if (lastVisibleIndex < 0)
                 {
-                    System.Diagnostics.Debug.WriteLine($"{guid} - ShouldLoadNextPage Run lastVisibleIndex: lastVisibleIndex={lastVisibleIndex}.");
                     return false;
                 }
 
                 if (PageLoadedCount == 0)
                 {
                     // If no pages are loaded, there is nothing to scroll
-                    System.Diagnostics.Debug.WriteLine($"{guid} - ShouldLoadNextPage Run PageLoadedCount: lastVisibleIndex={lastVisibleIndex}.");
                     return false;
                 }
 
                 if (IsFull)
                 {
                     // All messages are already loaded nothing to paginate
-                    System.Diagnostics.Debug.WriteLine($"{guid} - ShouldLoadNextPage Run IsFull: lastVisibleIndex={lastVisibleIndex}.");
                     return false;
                 }
 
                 if (HasStarted && LoadingTask.IsNotCompleted)
                 {
                     // Currently loading page
-                    System.Diagnostics.Debug.WriteLine($"{guid} - ShouldLoadNextPage Run HasStarted && LoadingTask.IsNotCompleted: lastVisibleIndex={lastVisibleIndex}.");
                     return false;
                 }
 
                 int itemsCount = LoadedCount;
-                System.Diagnostics.Debug.WriteLine($"{guid} - ShouldLoadNextPage Run Finishes: lastVisibleIndex={lastVisibleIndex}.");
                 return lastVisibleIndex >= (itemsCount - (PageSize * _loadingThreshold));
             });
         }
