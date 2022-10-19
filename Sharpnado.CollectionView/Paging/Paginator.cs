@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Sharpnado.CollectionView.Services;
@@ -30,6 +31,7 @@ namespace Sharpnado.CollectionView.Paging
         private bool _isDisposed;
         private List<TResult> _items;
         private bool _refreshRequested;
+        private SemaphoreSlim _loadPageSemaphore = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// The paginator is a concrete component, it is usable directly by instantiation (please don't abuse DI :).
@@ -146,7 +148,11 @@ namespace Sharpnado.CollectionView.Paging
             System.Diagnostics.Debug.WriteLine($"{guid} - OnScroll Start: lastVisibleIndex={lastVisibleIndex}.");
 
             TaskMonitor<bool>.Create(
-                ShouldLoadNextPage(lastVisibleIndex, guid),
+                async () =>
+                {
+                    await _loadPageSemaphore.WaitAsync();
+                    return await ShouldLoadNextPage(lastVisibleIndex, guid);
+                },
                 whenSuccessfullyCompleted: (task, shouldLoad) =>
                 {
                     System.Diagnostics.Debug.WriteLine($"{guid} - OnScroll whenSuccessfullyCompleted: lastVisibleIndex={lastVisibleIndex}.");
@@ -156,6 +162,8 @@ namespace Sharpnado.CollectionView.Paging
                         int pageToLoad = lastVisibleIndex / PageSize + 2;
                         LoadPage(pageToLoad, calledFromScroll: true, guid);
                     }
+
+                    _loadPageSemaphore.Release();
                 });
             System.Diagnostics.Debug.WriteLine($"{guid} - OnScroll Finishes: lastVisibleIndex={lastVisibleIndex}.");
         }
