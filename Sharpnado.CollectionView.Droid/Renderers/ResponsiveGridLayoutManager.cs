@@ -26,7 +26,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
         {
         }
 
-        public SpaceItemDecoration(int spaceDp)
+        public SpaceItemDecoration(double spaceDp)
         {
             _space = PlatformHelper.Instance.DpToPixels(spaceDp);
             _verticalMargin = PlatformHelper.Instance.DpToPixels(MeasureHelper.RecyclerViewItemVerticalMarginDp);
