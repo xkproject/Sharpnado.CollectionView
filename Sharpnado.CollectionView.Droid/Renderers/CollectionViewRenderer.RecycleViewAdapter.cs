@@ -105,6 +105,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             private readonly IEnumerable _elementItemsSource;
             private readonly INotifyCollectionChanged _notifyCollectionChanged;
             private readonly List<object> _dataSource;
+            private readonly Dictionary<object, int> _dataSourceItemViewType;
 
             private readonly ViewHolderQueue _viewHolderQueue;
 
@@ -132,11 +133,9 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 _weakNativeView = new WeakReference<CollectionViewRenderer>(nativeView);
                 _weakParentView = new WeakReference<RecyclerView>(parentView);
                 _context = context;
-
                 _elementItemsSource = element.ItemsSource;
-
                 _dataSource = _elementItemsSource?.Cast<object>().ToList() ?? new List<object>();
-
+                _dataSourceItemViewType = new Dictionary<object, int>();
                 _formsViews = new List<WeakReference<ViewCell>>();
 
                 if (_element.ItemTemplate is not DataTemplateSelector)
@@ -159,7 +158,6 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             {
                 return position;
             }
-
 
             public override int GetItemViewType(int position)
             {
@@ -211,13 +209,25 @@ namespace Sharpnado.CollectionView.Droid.Renderers
 
                 InternalLogger.Debug(Tag, () => $"OnBindViewHolder( position: {position} )");
 
+                var data = _dataSource[position];
                 var item = (ViewHolder)holder;
-                item.Bind(_dataSource[position], _element);
+                item.Bind(data, _element);
 
                 if (position > _currentMaxPosition)
                 {
                     _currentMaxPosition = position;
                     AnimateCell(item.ViewCell);
+                }
+
+                if (_element.ItemTemplate is AnimatedDataTemplateSelector animatedDataTemplateSelector)
+                {
+                    int itemViewType = _dataTemplates.IndexOf(animatedDataTemplateSelector.SelectTemplate(data, _element));
+                    if (_dataSourceItemViewType.TryGetValue(data, out int oldItemViewType) && itemViewType != oldItemViewType)
+                    {
+                        TaskMonitor.Create(animatedDataTemplateSelector.AnimateSelectedDataTemplateAsync(data, _element, item.ViewCell));
+                    }
+
+                    _dataSourceItemViewType[data] = itemViewType;
                 }
             }
 
@@ -603,7 +613,10 @@ namespace Sharpnado.CollectionView.Droid.Renderers
 
             private void Unbind(object data)
             {
-                // System.Diagnostics.Debug.WriteLine($"Unbind( data: {data} )");
+                InternalLogger.Info($"Unbind( data: {data} )");
+
+                _dataSourceItemViewType.Remove(data);
+
                 var weakViewCell = _formsViews.FirstOrDefault(
                     weakView => weakView.TryGetTarget(out ViewCell cell) && cell.BindingContext == data);
 
