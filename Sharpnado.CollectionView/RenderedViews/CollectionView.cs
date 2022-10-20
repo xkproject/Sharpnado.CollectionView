@@ -139,9 +139,9 @@ namespace Sharpnado.CollectionView.RenderedViews
 
         public static readonly BindableProperty ItemSpacingProperty = BindableProperty.Create(
             nameof(ItemSpacing),
-            typeof(int),
+            typeof(double),
             typeof(CollectionView),
-            defaultValue: 0,
+            defaultValue: 0D,
             defaultBindingMode: BindingMode.OneWayToSource);
 
         public static readonly BindableProperty TapCommandProperty = BindableProperty.Create(
@@ -259,9 +259,9 @@ namespace Sharpnado.CollectionView.RenderedViews
         /// The platform renderers doesn't handle changes on this property: this is OneWayToSource binding.
         /// This property is only bindable to allow styling.
         /// </summary>
-        public int ItemSpacing
+        public double ItemSpacing
         {
-            get => (int)GetValue(ItemSpacingProperty);
+            get => (double)GetValue(ItemSpacingProperty);
             set => SetValue(ItemSpacingProperty, value);
         }
 
