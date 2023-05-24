@@ -31,11 +31,13 @@ namespace Sharpnado.CollectionView.Droid.Renderers
         private IEnumerable _itemsSource;
         private ItemTouchHelper _dragHelper;
         private SpaceItemDecoration _itemDecoration;
+        private bool _disposed;
 
         public CollectionViewRenderer(Context context)
             : base(context)
         {
         }
+
 
         public CustomLinearLayoutManager HorizontalLinearLayoutManager => Control?.GetLayoutManager() as CustomLinearLayoutManager;
 
@@ -51,6 +53,44 @@ namespace Sharpnado.CollectionView.Droid.Renderers
 
         public static void Initialize()
         {
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            if (_dragHelper != null)
+            {
+                _dragHelper.AttachToRecyclerView(null);
+                _dragHelper = null;
+            }
+
+            if (!Control.IsNullOrDisposed())
+            {
+                Control.ClearOnScrollListeners();
+                var treeViewObserver = Control.ViewTreeObserver;
+                if (treeViewObserver != null)
+                {
+                    treeViewObserver.PreDraw -= OnPreDraw;
+                }
+
+                Control.GetAdapter()?.Dispose();
+                Control.GetLayoutManager()?.Dispose();
+            }
+
+            if (_itemsSource is INotifyCollectionChanged oldNotifyCollection)
+            {
+                oldNotifyCollection.CollectionChanged -= OnCollectionChanged;
+            }
+
+            _itemsSource = null;
+
+            base.Dispose(disposing);
         }
 
         public override bool OnInterceptTouchEvent(MotionEvent ev)
@@ -88,6 +128,9 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 {
                     oldNotifyCollection.CollectionChanged -= OnCollectionChanged;
                 }
+            
+                _itemsSource = null;
+                
             }
 
             if (e.NewElement != null)
