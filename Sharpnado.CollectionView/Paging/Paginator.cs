@@ -131,7 +131,7 @@ namespace Sharpnado.CollectionView.Paging
             {
                 return;
             }
-
+            Reset();
             _isDisposed = true;
         }
 

@@ -34,6 +34,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
         {
             private readonly ViewCell _viewCell;
             private readonly ICommand _tapCommand;
+            private bool _disposed;
 
             public ViewHolder(IntPtr javaReference, JniHandleOwnership transfer)
                 : base(javaReference, transfer)
@@ -62,6 +63,20 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             {
                 _viewCell.BindingContext = context;
                 _viewCell.Parent = parent;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                ItemView.Click -= OnItemViewClick;
+                ItemView.Dispose();
+
+                base.Dispose(disposing);
             }
 
             private void OnItemViewClick(object sender, EventArgs e)
@@ -121,6 +136,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             private bool _isDisposed;
 
             private int _currentMaxPosition = -1;
+            private List<ViewHolder> createdViewHolders = new List<ViewHolder>();
 
             public RecycleViewAdapter(IntPtr javaReference, JniHandleOwnership transfer)
                 : base(javaReference, transfer)
@@ -328,6 +344,16 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                     _notifyCollectionChanged.CollectionChanged -= OnCollectionChanged;
                 }
 
+                _dataSource.Clear();
+                _dataSourceItemViewType.Clear();
+                _formsViews.Clear();
+                foreach (var viewHolder in createdViewHolders)
+                {
+                    viewHolder.Dispose();
+                }
+
+                createdViewHolders.Clear();
+
                 base.Dispose(disposing);
             }
 
@@ -339,7 +365,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 {
                     viewHolder.ItemView.Touch += (sender, e) => OnItemViewTouch(e, viewHolder);
                 }
-
+                createdViewHolders.Add(viewHolder);
                 return viewHolder;
             }
 
