@@ -54,20 +54,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                     AddRiple();
                 }
             }
-            protected override void Dispose(bool disposing)
-            {
-                if (_disposed)
-                {
-                    return;
-                }
 
-                _disposed = true;
-
-                ItemView.Click -= OnItemViewClick;
-                ItemView.Dispose();
-                
-                base.Dispose(disposing);
-            }
             public ViewCell ViewCell => _viewCell;
 
             public object BindingContext => ViewCell?.BindingContext;
@@ -76,6 +63,20 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             {
                 _viewCell.BindingContext = context;
                 _viewCell.Parent = parent;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                ItemView.Click -= OnItemViewClick;
+                ItemView.Dispose();
+
+                base.Dispose(disposing);
             }
 
             private void OnItemViewClick(object sender, EventArgs e)
@@ -135,6 +136,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             private bool _isDisposed;
 
             private int _currentMaxPosition = -1;
+            private List<ViewHolder> createdViewHolders = new List<ViewHolder>();
 
             public RecycleViewAdapter(IntPtr javaReference, JniHandleOwnership transfer)
                 : base(javaReference, transfer)
@@ -335,7 +337,6 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             protected override void Dispose(bool disposing)
             {
                 _isDisposed = true;
-                
                 _viewHolderQueue?.Clear();
 
                 if (_notifyCollectionChanged != null)
@@ -343,9 +344,6 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                     _notifyCollectionChanged.CollectionChanged -= OnCollectionChanged;
                 }
 
-
-
-                
                 _dataSource.Clear();
                 _dataSourceItemViewType.Clear();
                 _formsViews.Clear();
@@ -353,11 +351,12 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 {
                     viewHolder.Dispose();
                 }
+
                 createdViewHolders.Clear();
 
                 base.Dispose(disposing);
             }
-            List<ViewHolder> createdViewHolders = new List<ViewHolder>();
+
             private ViewHolder CreateViewHolder(int itemViewType = -1)
             {
                 var view = CreateView(out var viewCell, itemViewType);

@@ -38,7 +38,6 @@ namespace Sharpnado.CollectionView.Droid.Renderers
         {
         }
 
-
         public CustomLinearLayoutManager HorizontalLinearLayoutManager => Control?.GetLayoutManager() as CustomLinearLayoutManager;
 
         public GridLayoutManager GridLayoutManager => Control?.GetLayoutManager() as GridLayoutManager;
