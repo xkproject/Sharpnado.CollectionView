@@ -32,8 +32,8 @@ namespace Sharpnado.CollectionView.Droid.Renderers
     {
         private class ViewHolder : RecyclerView.ViewHolder
         {
-            private readonly ViewCell _viewCell;
             private readonly ICommand _tapCommand;
+            private ViewCell _viewCell;
             private bool _disposed;
 
             public ViewHolder(IntPtr javaReference, JniHandleOwnership transfer)
@@ -74,8 +74,11 @@ namespace Sharpnado.CollectionView.Droid.Renderers
 
                 _disposed = true;
                 ItemView.Click -= OnItemViewClick;
+                _viewCell.Parent = null;
+                _viewCell.BindingContext = null;
+                _viewCell = null;
                 ItemView.Dispose();
-
+                ItemView = null;
                 base.Dispose(disposing);
             }
 
@@ -365,6 +368,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 {
                     viewHolder.ItemView.Touch += (sender, e) => OnItemViewTouch(e, viewHolder);
                 }
+
                 createdViewHolders.Add(viewHolder);
                 return viewHolder;
             }
