@@ -66,11 +66,9 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             if (!_itemDecoration.IsNullOrDisposed())
             {
                 _recyclerView.RemoveItemDecoration(_itemDecoration);
-                //esto elimina spaceitemdecoration pero no spacingitemdecoration
                 _itemDecoration = null;
             }
 
-            //_recyclerView.Dispose();
             _recyclerView = null;
             if (_dragHelper != null)
             {
