@@ -32,6 +32,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
         private ItemTouchHelper _dragHelper;
         private SpaceItemDecoration _itemDecoration;
         private bool _disposed;
+        private RecyclerView _recyclerView;
 
         public CollectionViewRenderer(Context context)
             : base(context)
@@ -62,7 +63,13 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             }
 
             _disposed = true;
+            if (!_itemDecoration.IsNullOrDisposed())
+            {
+                _recyclerView.RemoveItemDecoration(_itemDecoration);
+                _itemDecoration = null;
+            }
 
+            _recyclerView = null;
             if (_dragHelper != null)
             {
                 _dragHelper.AttachToRecyclerView(null);
@@ -127,9 +134,8 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 {
                     oldNotifyCollection.CollectionChanged -= OnCollectionChanged;
                 }
-            
+
                 _itemsSource = null;
-                
             }
 
             if (e.NewElement != null)
@@ -243,11 +249,11 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 _isFirstInitialization = false;
             }
 
-            var recyclerView = new SlowRecyclerView(Context, Element.ScrollSpeed) { HasFixedSize = false };
+            _recyclerView = new SlowRecyclerView(Context, Element.ScrollSpeed) { HasFixedSize = false };
 
-            SetListLayout(recyclerView);
+            SetListLayout(_recyclerView);
 
-            SetNativeControl(recyclerView);
+            SetNativeControl(_recyclerView);
 
             if (Element.SnapStyle != SnapStyle.None)
             {
