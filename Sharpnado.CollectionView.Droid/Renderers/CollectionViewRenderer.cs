@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
@@ -31,6 +32,8 @@ namespace Sharpnado.CollectionView.Droid.Renderers
         private IEnumerable _itemsSource;
         private ItemTouchHelper _dragHelper;
         private SpaceItemDecoration _itemDecoration;
+        private PreDrawListener _preDrawListener;
+
         private bool _disposed;
         private RecyclerView _recyclerView;
 
@@ -80,9 +83,9 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             {
                 Control.ClearOnScrollListeners();
                 var treeViewObserver = Control.ViewTreeObserver;
-                if (treeViewObserver != null)
+                if (treeViewObserver != null && _preDrawListener != null)
                 {
-                    treeViewObserver.PreDraw -= OnPreDraw;
+                    treeViewObserver.RemoveOnPreDrawListener(_preDrawListener);
                 }
 
                 Control.GetAdapter()?.Dispose();
@@ -121,9 +124,9 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 {
                     Control.ClearOnScrollListeners();
                     var treeViewObserver = Control.ViewTreeObserver;
-                    if (treeViewObserver != null)
+                    if (treeViewObserver != null && _preDrawListener != null)
                     {
-                        treeViewObserver.PreDraw -= OnPreDraw;
+                        treeViewObserver.RemoveOnPreDrawListener(_preDrawListener);
                     }
 
                     Control.GetAdapter()?.Dispose();
@@ -282,7 +285,8 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 }
             }
 
-            Control.ViewTreeObserver.PreDraw += OnPreDraw;
+            _preDrawListener = new PreDrawListener(this);
+            Control.ViewTreeObserver.AddOnPreDrawListener(_preDrawListener);
         }
 
         private void SetListLayout(RecyclerView recyclerView)
@@ -316,8 +320,27 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 recyclerView.SetClipChildren(false);
             }
         }
+        private class PreDrawListener : Java.Lang.Object, ViewTreeObserver.IOnPreDrawListener
+        {
+            private readonly WeakReference<CollectionViewRenderer> _renderer;
 
-        private void OnPreDraw(object sender, ViewTreeObserver.PreDrawEventArgs e)
+            public PreDrawListener(CollectionViewRenderer renderer)
+            {
+                _renderer = new WeakReference<CollectionViewRenderer>(renderer);
+            }
+
+            public bool OnPreDraw()
+            {
+                if (_renderer.TryGetTarget(out CollectionViewRenderer target))
+                {
+                    target.OnPreDraw();
+                }
+
+                return true;
+            }
+        }
+
+        private void OnPreDraw()
         {
             if (Control.IsNullOrDisposed())
             {
