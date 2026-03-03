@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -8,7 +8,8 @@ using System.Windows.Input;
 
 using Sharpnado.CollectionView.Paging;
 
-using Xamarin.Forms;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui;
 
 namespace Sharpnado.CollectionView.RenderedViews
 {
@@ -482,7 +483,7 @@ namespace Sharpnado.CollectionView.RenderedViews
 
             string parentTypeFullName = Parent.GetType().FullName;
 
-            const string RefreshViewFullName = "Xamarin.Forms.RefreshView";
+            const string RefreshViewFullName = "Microsoft.Maui.Controls.RefreshView";
             const string PullToRefreshFullName = "Refractored.XamForms.PullToRefresh.PullToRefreshLayout ";
 
             return parentTypeFullName == RefreshViewFullName
