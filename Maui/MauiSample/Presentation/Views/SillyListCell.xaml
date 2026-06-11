@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Border
+    x:Class="MauiSample.Presentation.Views.SillyListCell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:AlohaKit.Controls;assembly=AlohaKit"
+    xmlns:viewModels="clr-namespace:MauiSample.Presentation.ViewModels"
+    xmlns:views="clr-namespace:MauiSample.Presentation.Views"
+    Padding="{StaticResource StandardPadding}"
+    Stroke="{StaticResource DarkCardBorder}"
+    StrokeThickness="2">
+
+    <StackLayout
+        x:DataType="viewModels:SillyDudeVmo"
+        Orientation="Horizontal"
+        Spacing="16">
+        <Image
+            Aspect="AspectFill"
+            HeightRequest="50"
+            Source="{Binding ImageUrl}"
+            Style="{StaticResource Avatar}"
+            VerticalOptions="Start"
+            WidthRequest="50">
+            <Image.Clip>
+                <EllipseGeometry
+                    Center="25,25"
+                    RadiusX="25"
+                    RadiusY="25" />
+            </Image.Clip>
+        </Image>
+
+        <StackLayout
+            Orientation="Vertical"
+            Spacing="0"
+            VerticalOptions="Center">
+
+            <Label
+                Style="{StaticResource TextSubhead}"
+                Text="{Binding Name}"
+                VerticalOptions="Start" />
+
+            <Label Style="{StaticResource TextCaptionSecondary}" Text="{Binding Role}" />
+
+            <controls:Rating
+                BackgroundColor="Transparent"
+                ItemsCount="5"
+                Scale="0.6"
+                SelectedFill="{StaticResource Accent}"
+                SelectedStroke="Transparent"
+                SelectedStrokeWidth="0"
+                TranslationX="-30"
+                UnSelectedFill="Transparent"
+                UnSelectedStroke="Transparent"
+                UnSelectedStrokeWidth="0"
+                VerticalOptions="Start"
+                Value="{Binding SillinessDegree}" />
+        </StackLayout>
+
+    </StackLayout>
+</Border>
