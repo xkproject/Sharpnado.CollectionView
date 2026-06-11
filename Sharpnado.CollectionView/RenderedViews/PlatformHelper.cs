@@ -1,5 +1,4 @@
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
+﻿using Xamarin.Forms;
 
 namespace Sharpnado.CollectionView.RenderedViews
 {

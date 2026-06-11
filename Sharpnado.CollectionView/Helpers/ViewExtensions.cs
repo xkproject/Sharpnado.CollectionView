@@ -1,9 +1,7 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
-using Microsoft.Maui.Graphics;
+using Xamarin.Forms;
 
 namespace Sharpnado.CollectionView.Helpers
 {
@@ -16,10 +14,10 @@ namespace Sharpnado.CollectionView.Helpers
         {
             Color Transform(double t) =>
                 Color.FromRgba(
-                    fromColor.Red + t * (toColor.Red - fromColor.Red),
-                    fromColor.Green + t * (toColor.Green - fromColor.Green),
-                    fromColor.Blue + t * (toColor.Blue - fromColor.Blue),
-                    fromColor.Alpha + t * (toColor.Alpha - fromColor.Alpha));
+                    fromColor.R + t * (toColor.R - fromColor.R),
+                    fromColor.G + t * (toColor.G - fromColor.G),
+                    fromColor.B + t * (toColor.B - fromColor.B),
+                    fromColor.A + t * (toColor.A - fromColor.A));
             return ColorAnimation(self, "ColorTo", Transform, callback, length, easing);
         }
 

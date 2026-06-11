@@ -1,6 +1,5 @@
-using System.Threading.Tasks;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
+﻿using System.Threading.Tasks;
+using Xamarin.Forms;
 
 namespace Sharpnado.CollectionView.Helpers
 {

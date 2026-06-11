@@ -1,7 +1,6 @@
-using System.Linq;
+﻿using System.Linq;
 
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
+using Xamarin.Forms;
 
 namespace Sharpnado.CollectionView.Effects
 {

@@ -1,7 +1,6 @@
-using System.Text;
+﻿using System.Text;
 
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
+using Xamarin.Forms;
 
 namespace Sharpnado.CollectionView.Helpers
 {

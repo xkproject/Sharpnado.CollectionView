@@ -1,9 +1,8 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Linq;
 
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
+using Xamarin.Forms;
 
 namespace Sharpnado.CollectionView.Helpers
 {

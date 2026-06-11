@@ -1,8 +1,7 @@
-using System;
+﻿using System;
 
-using Microsoft.Maui.Controls;
-using Microsoft.Maui;
-using Microsoft.Maui.Controls.Xaml;
+using Xamarin.Forms;
+using Xamarin.Forms.Xaml;
 
 namespace Sharpnado.CollectionView.RenderedViews
 {
