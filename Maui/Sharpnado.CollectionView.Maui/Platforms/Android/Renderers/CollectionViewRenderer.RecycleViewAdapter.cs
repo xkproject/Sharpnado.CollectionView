@@ -65,12 +65,32 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 }
 
                 _disposed = true;
-                ItemView.Click -= OnItemViewClick;
-                _viewCell.Parent = null;
-                _viewCell.BindingContext = null;
-                _viewCell = null;
-                ItemView.Dispose();
-                ItemView = null;
+
+                // En el hilo finalizador (disposing == false) el peer Java puede estar ya recolectado
+                // por el GC-bridge: leer ItemView lanza ObjectDisposedException y una excepcion no
+                // controlada en el finalizador ABORTA el proceso (crash real al volver de Visit a
+                // MainMenu, 04/07/2026). Los peers solo se tocan en el Dispose determinista, y aun
+                // asi protegidos por si el peer Java murio entre medias.
+                if (disposing)
+                {
+                    try
+                    {
+                        ItemView.Click -= OnItemViewClick;
+                        ItemView.Dispose();
+                        ItemView = null;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                    }
+
+                    if (_viewCell != null)
+                    {
+                        _viewCell.Parent = null;
+                        _viewCell.BindingContext = null;
+                        _viewCell = null;
+                    }
+                }
+
                 base.Dispose(disposing);
             }
 
@@ -339,22 +359,35 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             protected override void Dispose(bool disposing)
             {
                 _isDisposed = true;
-                _viewHolderQueue?.Clear();
 
-                if (_notifyCollectionChanged != null)
+                // Igual que en ViewHolder.Dispose: en el hilo finalizador (disposing == false) no se
+                // tocan peers Java ni otros objetos managed — una ObjectDisposedException aqui
+                // abortaria el proceso. La limpieza solo tiene sentido en el Dispose determinista.
+                if (disposing)
                 {
-                    _notifyCollectionChanged.CollectionChanged -= OnCollectionChanged;
-                }
+                    _viewHolderQueue?.Clear();
 
-                _dataSource.Clear();
-                _dataSourceItemViewType.Clear();
-                _formsViews.Clear();
-                foreach (var viewHolder in createdViewHolders)
-                {
-                    viewHolder.Dispose();
-                }
+                    if (_notifyCollectionChanged != null)
+                    {
+                        _notifyCollectionChanged.CollectionChanged -= OnCollectionChanged;
+                    }
 
-                createdViewHolders.Clear();
+                    _dataSource.Clear();
+                    _dataSourceItemViewType.Clear();
+                    _formsViews.Clear();
+                    foreach (var viewHolder in createdViewHolders)
+                    {
+                        try
+                        {
+                            viewHolder.Dispose();
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                        }
+                    }
+
+                    createdViewHolders.Clear();
+                }
 
                 base.Dispose(disposing);
             }

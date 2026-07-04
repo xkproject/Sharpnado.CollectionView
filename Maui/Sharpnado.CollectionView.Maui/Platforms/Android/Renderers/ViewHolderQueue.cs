@@ -37,12 +37,21 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 {
                     if (view.TryGetTarget(out var holder))
                     {
-                        if (holder.ItemView is ViewGroup viewGroup)
+                        // El peer Java del holder puede estar ya recolectado por el GC-bridge:
+                        // leer ItemView lanzaria ObjectDisposedException y tiraria el proceso si
+                        // esto corre dentro de un finalizador.
+                        try
                         {
-                            viewGroup.RemoveAllViews();
-                        }
+                            if (holder.ItemView is ViewGroup viewGroup)
+                            {
+                                viewGroup.RemoveAllViews();
+                            }
 
-                        holder.ItemView?.Dispose();
+                            holder.ItemView?.Dispose();
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                        }
                     }
                 }
 

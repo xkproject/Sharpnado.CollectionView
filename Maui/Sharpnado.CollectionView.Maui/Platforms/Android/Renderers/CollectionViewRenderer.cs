@@ -72,38 +72,52 @@ namespace Sharpnado.CollectionView.Droid.Renderers
             }
 
             _disposed = true;
-            if (!_itemDecoration.IsNullOrDisposed())
-            {
-                _recyclerView.RemoveItemDecoration(_itemDecoration);
-                _itemDecoration = null;
-            }
 
-            _recyclerView = null;
-            if (_dragHelper != null)
+            // En el hilo finalizador (disposing == false) los peers Java (_recyclerView, Control,
+            // _dragHelper...) pueden estar ya recolectados por el GC-bridge: cualquier acceso lanza
+            // ObjectDisposedException y una excepcion no controlada en el finalizador aborta el
+            // proceso. Solo se limpia en el Dispose determinista, protegido por la misma razon.
+            if (disposing)
             {
-                _dragHelper.AttachToRecyclerView(null);
-                _dragHelper = null;
-            }
-
-            if (!Control.IsNullOrDisposed())
-            {
-                Control.ClearOnScrollListeners();
-                var treeViewObserver = Control.ViewTreeObserver;
-                if (treeViewObserver != null && _preDrawListener != null)
+                try
                 {
-                    treeViewObserver.RemoveOnPreDrawListener(_preDrawListener);
+                    if (!_itemDecoration.IsNullOrDisposed() && !_recyclerView.IsNullOrDisposed())
+                    {
+                        _recyclerView.RemoveItemDecoration(_itemDecoration);
+                        _itemDecoration = null;
+                    }
+
+                    _recyclerView = null;
+                    if (_dragHelper != null)
+                    {
+                        _dragHelper.AttachToRecyclerView(null);
+                        _dragHelper = null;
+                    }
+
+                    if (!Control.IsNullOrDisposed())
+                    {
+                        Control.ClearOnScrollListeners();
+                        var treeViewObserver = Control.ViewTreeObserver;
+                        if (treeViewObserver != null && _preDrawListener != null)
+                        {
+                            treeViewObserver.RemoveOnPreDrawListener(_preDrawListener);
+                        }
+
+                        Control.GetAdapter()?.Dispose();
+                        Control.GetLayoutManager()?.Dispose();
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
                 }
 
-                Control.GetAdapter()?.Dispose();
-                Control.GetLayoutManager()?.Dispose();
-            }
+                if (_itemsSource is INotifyCollectionChanged oldNotifyCollection)
+                {
+                    oldNotifyCollection.CollectionChanged -= OnCollectionChanged;
+                }
 
-            if (_itemsSource is INotifyCollectionChanged oldNotifyCollection)
-            {
-                oldNotifyCollection.CollectionChanged -= OnCollectionChanged;
+                _itemsSource = null;
             }
-
-            _itemsSource = null;
 
             base.Dispose(disposing);
         }
