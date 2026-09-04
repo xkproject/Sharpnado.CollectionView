@@ -29,6 +29,18 @@ namespace Sharpnado.CollectionView.Droid.Renderers
 
             private bool _isRefreshViewUserEnabled = false;
 
+            /// <summary>
+            /// Speed of the auto scroll triggered by dragging an item past the edge of the collection, in
+            /// density independent pixels so it covers the same amount of content on every screen. It is
+            /// the speed the previous fixed step of 30 pixels per call produced on a 60 Hz screen of
+            /// density 2.
+            /// </summary>
+            private const double OutOfBoundsScrollDipsPerSecond = 900d;
+
+            private const long AssumedFrameMilliseconds = 16;
+
+            private long _lastOutOfBoundsScrollMilliseconds;
+
             public DragAnDropItemTouchHelperCallback(IntPtr handle, JniHandleOwnership transfer)
                 : base(handle, transfer)
             {
@@ -69,6 +81,7 @@ namespace Sharpnado.CollectionView.Droid.Renderers
 
                 if (actionState == ItemTouchHelper.ActionStateDrag)
                 {
+                    _lastOutOfBoundsScrollMilliseconds = 0;
                     _collection.IsDragAndDropping = true;
                     if (_collection.IsInPullToRefresh() && _collection.Parent is ContentView refreshView)
                     {
@@ -137,6 +150,13 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 recyclerView.InvalidateItemDecorations();
             }
 
+            /// <summary>
+            /// Distance to auto scroll on each call. It is derived from the time elapsed since the previous
+            /// call, not fixed per call, because this runs once per animation frame: a fixed step scrolls
+            /// as many times faster as the screen is quicker, so a 90 Hz tablet ran away compared with a
+            /// 60 Hz phone. It is also scaled by the screen density, so a less dense screen does not cover
+            /// more content per second.
+            /// </summary>
             public override int InterpolateOutOfBoundsScroll(
                 RecyclerView recyclerView,
                 int viewSize,
@@ -144,8 +164,16 @@ namespace Sharpnado.CollectionView.Droid.Renderers
                 int totalSize,
                 long msSinceStartScroll)
             {
-                int result = Math.Sign(viewSizeOutOfBounds) * 30;
-                return result;
+                long elapsedMilliseconds = msSinceStartScroll - _lastOutOfBoundsScrollMilliseconds;
+                _lastOutOfBoundsScrollMilliseconds = msSinceStartScroll;
+                if (elapsedMilliseconds <= 0 || elapsedMilliseconds > 100)
+                {
+                    elapsedMilliseconds = AssumedFrameMilliseconds;
+                }
+
+                double density = recyclerView.Context?.Resources?.DisplayMetrics?.Density ?? 1d;
+                int pixels = (int)Math.Round(OutOfBoundsScrollDipsPerSecond * density * elapsedMilliseconds / 1000d);
+                return Math.Sign(viewSizeOutOfBounds) * Math.Max(1, pixels);
             }
 
             public override float GetMoveThreshold(RecyclerView.ViewHolder viewHolder)
